@@ -167,7 +167,7 @@ npm run build:dev
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU PUBLIC LIMITED License - Attribution and Link back to Repo please. see the [LICENSE](LICENSE) file for details.
 
 ## 🌟 Support
 
