@@ -173,11 +173,10 @@ This project is licensed under the GNU PUBLIC LIMITED License - Attribution and 
 
 ### Documentation
 - **Website**: [metafintek.com](https://metafintek.com)
-- **FAQ**: [metafintek.com/mymories/faq](https://metafintek.com/mymories/faq)
-- **Video Tutorials**: [metafintek.com/mymories/tutorials](https://metafintek.com/mymories/tutorials)
+s)
 
 ### Contact
-- **Email**: support@metafintek.com
+- **Email**: aliya@metafintek.com
 - **Issues**: Report bugs on our GitHub Issues page
 - **Feature Requests**: Submit suggestions via our feedback form
 
