@@ -95,8 +95,7 @@ Access advanced settings by:
 3. Adjust compression levels and file naming preferences
 
 ### Keyboard Shortcuts
-- `Ctrl+Shift+M` (Windows/Linux) or `Cmd+Shift+M` (Mac): Quick export
-- `Ctrl+Shift+B` (Windows/Linux) or `Cmd+Shift+B` (Mac): Bulk export mode
+COMING SOON
 
 ## 📋 System Requirements
 
@@ -173,7 +172,6 @@ This project is licensed under the GNU PUBLIC LIMITED License - Attribution and 
 
 ### Documentation
 - **Website**: [metafintek.com](https://metafintek.com)
-s)
 
 ### Contact
 - **Email**: aliya@metafintek.com
