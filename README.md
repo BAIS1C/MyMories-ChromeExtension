@@ -6,13 +6,15 @@ MyMories is a privacy-first AI chat backup tool that allows you to save your con
 
 ## 🚀 Features
 
-- **Universal Compatibility**: Works with ChatGPT, Claude, Gemini, and other major AI platforms
-- **High Compression**: Reduces file sizes by up to 75% without losing content
-- **Privacy-First**: All processing happens locally - no data sent to external servers
-- **Portable Format**: Standard .txt files that open anywhere
-- **One-Click Export**: Simple interface for quick chat backups
-- **Batch Processing**: Export multiple conversations at once
-- **Metadata Preservation**: Keeps timestamps, usernames, and conversation structure
+- **🔥 Enhanced Multi-Layer Compression**: Dictionary + Symbolic + VSM achieves ~75% size reduction
+- **🎯 Smart Symbolic Compression**: Emoji and text speak replacements for maximum token efficiency
+- **💬 Multi-Platform Support**: Extract conversations from ChatGPT, Claude, Google Gemini, Kimi & Grok
+- **🌐 Universal Compatibility**: Exported files work with any top-tier LLM
+- **⚡ On-Demand Activation**: Zero overhead until you click to use
+- **📚 Web Archiving**: Save any web content, not just chat conversations
+- **📋 Privacy-First**: All processing happens locally - no data sent to external servers
+- **🔄 Instant Context**: Drag and drop files into any LLM to continue conversations
+
 
 ## 📦 Installation
 
