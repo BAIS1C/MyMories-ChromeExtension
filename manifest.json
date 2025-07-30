@@ -1,6 +1,6 @@
 {
-  "name": "MyMories",
-  "description": "Save LLM chats as portable .txt files with up to 75% compression. Privacy-first AI chat backup tool.",
+  "name": "MyMories by Metafintek.com",
+  "description": "Save LLM chats as portable .txt files with 75% compression. Privacy-first AI chat backup tool.",
   "version": "1.0.0",
   "manifest_version": 3,
   "permissions": ["activeTab", "downloads", "scripting"],
@@ -22,6 +22,9 @@
     "48": "icons/48.png", 
     "128": "icons/128.png"
   },
+  "web_accessible_resources": [
+    { "resources": ["lib/*"], "matches": ["<all_urls>"] }
+  ],
   "homepage_url": "https://metafintek.com",
   "author": "PT Meta Fin Tek"
 }
