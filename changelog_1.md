@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] - 2025-11-26
+
+### 🚑 The "Resurrection" Update (Hotfix)
+- **Fixed**: Solved "DOM Drift" issues where the extension stopped working on ChatGPT, Claude, and Gemini due to UI updates.
+- **Fixed**: Solved "Context Invalidated" errors by auto-injecting content scripts via `manifest.json`.
+- **New Platform**: Added support for **DeepSeek** and **Perplexity**.
+- **Robust Selectors**: Implemented "Semantic Selectors" (using `data-testid` and `role`) to prevent future breakage when AI sites update their CSS.
+- **Stability**: Enhanced `content.js` to gracefully handle different DOM structures without crashing.
+
 ## [1.0.0] - 2025-01-16
 
 ### 🚀 Production Release

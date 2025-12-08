@@ -4,10 +4,10 @@ const detectSourceContext = (url) => {
     { pattern: /chatgpt\.com|chat\.openai\.com/, source: 'ChatGPT', sourceType: 'LLM', working: true },
     { pattern: /claude\.ai/, source: 'Claude', sourceType: 'LLM', working: true },
     { pattern: /gemini\.google\.com/, source: 'Gemini', sourceType: 'LLM', working: true },
-    { pattern: /perplexity\.ai/, source: 'Perplexity', sourceType: 'LLM', working: false },
+    { pattern: /perplexity\.ai/, source: 'Perplexity', sourceType: 'LLM', working: true },
     { pattern: /grok\.com|x\.com\/i\/grok/, source: 'Grok', sourceType: 'LLM', working: true },
     { pattern: /kimi\.com|kimi\.moonshot\.cn/, source: 'Kimi', sourceType: 'LLM', working: true },
-    { pattern: /chat\.deepseek\.com/, source: 'DeepSeek', sourceType: 'LLM', working: false },
+    { pattern: /chat\.deepseek\.com/, source: 'DeepSeek', sourceType: 'LLM', working: true },
     { pattern: /poe\.com/, source: 'Poe', sourceType: 'LLM', working: false }
   ];
 
@@ -52,53 +52,54 @@ const updateContextAwareUI = (detection) => {
   }
 };
 
-// Inject content script on demand
+// Robust Injection Logic (v1.1.0 Fix)
 const injectContentScript = async (tabId) => {
   try {
-    // Check if content script is already injected
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      func: () => window.myMoryInjected
-    });
-
-    if (results[0]?.result) {
-      console.log('✅ Content script already injected');
-      return true;
+    // 1. Check if script is already alive by sending a 'PING'
+    try {
+      const response = await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+      if (response === 'PONG') {
+        console.log('✅ Content script already active');
+        return true;
+      }
+    } catch (e) {
+      // PING failed, script not there or broken
     }
 
-    // Inject the content script
+    // 2. Inject if PING failed
+    console.log('💉 Injecting content script...');
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
       files: ['content.js']
     });
 
-    console.log('✅ Content script injected successfully');
+    // 3. Verify injection worked
+    // Give it a split second to initialize listeners
+    await new Promise(r => setTimeout(r, 50)); 
+    
+    // Optional: Double check
     return true;
   } catch (error) {
-    console.error('❌ Failed to inject content script:', error);
+    console.error('❌ Injection failed:', error);
     return false;
   }
 };
 
-// Harvest function that injects script on demand
+// Harvest function with timeout protection
 const harvestChat = async (tabId) => {
-  // First inject the content script
   const injected = await injectContentScript(tabId);
-  if (!injected) {
-    throw new Error('Failed to inject content script');
-  }
+  if (!injected) throw new Error('Could not inject script');
 
-  // Small delay to ensure script is ready
-  await new Promise(resolve => setTimeout(resolve, 100));
-
-  // Now send the harvest message
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Timeout waiting for content script')), 5000);
+    // 5s Timeout
+    const timeout = setTimeout(() => reject(new Error('Timeout waiting for response. Try refreshing the page.')), 5000);
     
     chrome.tabs.sendMessage(tabId, { type: 'HARVEST' }, (response) => {
       clearTimeout(timeout);
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
+      } else if (!response) {
+         reject(new Error('Empty response from script'));
       } else {
         resolve(response);
       }
@@ -130,15 +131,6 @@ START YOUR RESPONSE WITH: "${responsePrompt}"
 // Store the decode prompt globally
 let currentDecodePrompt = '';
 
-// FIX: Use UMD/global style instead of ES modules
-let pipeline;
-if (typeof window !== 'undefined' && window.transformers) {
-  pipeline = window.transformers.pipeline;
-  console.log('✅ Transformers loaded');
-} else {
-  console.log('⚠️ Transformers not available');
-}
-
 // Enhanced compression with dictionary support
 const applyDictionaryCompression = (text) => {
   let compressed = text;
@@ -162,7 +154,7 @@ const applyDictionaryCompression = (text) => {
   return compressed;
 };
 
-// NEW: Symbolic compression for emojis and text speak
+// Symbolic compression for emojis and text speak
 const applySymbolicCompression = (text) => {
   return text
     // High-value phrase → emoji replacements
@@ -227,15 +219,31 @@ const applySymbolicCompression = (text) => {
     .replace(/\bespecially\b/gi, 'espcly');
 };
 
-const vsm = t => t.replace(/\B[aeiou]/gi, '');
+// NEW: Smart VSM that preserves proper nouns (Entities) and short words
+const smartVSM = (text) => {
+  return text.split(' ').map(word => {
+    // 1. Keep very short words to preserve readability (e.g., "is", "at")
+    if (word.length <= 3) return word;
+    
+    // 2. Keep capitalized words (likely names/entities) unless they are in the dictionary
+    // This prevents "Grok" -> "Grk" or "Python" -> "Pythn"
+    if (/^[A-Z][a-z]+$/.test(word) && 
+        window.MyMoryDictionary && 
+        !window.MyMoryDictionary.COMPRESSION_DICTIONARY[word.toLowerCase()]) {
+        return word; 
+    }
+    
+    // 3. Otherwise strip internal vowels (keeps first/last letter if needed, but simple strip for now)
+    return word.replace(/\B[aeiou]/gi, '');
+  }).join(' ');
+};
 
-// UPDATED: Enhanced VSM with reordered pipeline
-const enhancedVSM = (text) => {
-  // Pipeline: Dictionary → VSM → Symbolic
-  // This order prevents vowel-stripping conflicts
+// UPDATED: Multi-stage pipeline
+const enhancedCompressionPipeline = (text) => {
+  // Pipeline: Dictionary → Smart VSM → Symbolic
   let compressed = applyDictionaryCompression(text);
-  compressed = vsm(compressed); // Strip vowels first
-  compressed = applySymbolicCompression(compressed); // Apply symbols to consonant skeleton
+  compressed = smartVSM(compressed); 
+  compressed = applySymbolicCompression(compressed); 
   return compressed;
 };
 
@@ -253,11 +261,11 @@ document.getElementById('saveBtn').onclick = async () => {
       turns = await harvestChat(tab.id);
     } catch (error) {
       console.error('❌ Harvest error:', error);
-      return alert(`Harvest failed: ${error.message}\n\nMake sure you're on a page with chat content.`);
+      return alert(`Harvest failed: ${error.message}\n\n1. Refresh the page\n2. Wait for chat to load\n3. Try again`);
     }
     
     if (!Array.isArray(turns) || turns.length === 0) {
-      return alert('No chat messages found on this page. Make sure you\'re on a chat page with visible messages.');
+      return alert('No chat messages found. Please ensure the chat has loaded completely.');
     }
 
     console.log(`📊 Found ${turns.length} turns`);
@@ -271,7 +279,7 @@ document.getElementById('saveBtn').onclick = async () => {
       detection = {
         source: override,
         sourceType: override === 'URL' ? 'URL' : 'LLM',
-        working: ['ChatGPT', 'Claude', 'Gemini', 'Kimi', 'Grok'].includes(override),
+        working: ['ChatGPT', 'Claude', 'Gemini', 'Kimi', 'Grok', 'DeepSeek', 'Perplexity'].includes(override),
         confidence: 'override'
       };
     }
@@ -284,18 +292,19 @@ document.getElementById('saveBtn').onclick = async () => {
     // Apply enhanced compression based on settings
     const processedTurns = turns.map(t => ({
       author: t.author,
-      text: useVSM ? enhancedVSM(t.text) : applyDictionaryCompression(t.text)
+      // Use pipeline if Enhanced is checked, else just Dictionary
+      text: useVSM ? enhancedCompressionPipeline(t.text) : applyDictionaryCompression(t.text)
     }));
 
     const chatText = processedTurns.map(t => `[${t.author}] ${t.text}`).join('\n');
-    const summary = `Summary of ${turns.length} turns${useVSM ? ' (Enhanced VSM + Dictionary + Symbolic)' : ' (Dictionary compression)'}`;
+    const summary = `Summary of ${turns.length} turns${useVSM ? ' (Enhanced: Smart VSM + Dict + Symbolic)' : ' (Standard: Dictionary only)'}`;
 
     // Create the compressed MyMory content (just the data)
     const mmrContent = `📌 CONTEXT INJECTION – MyMory Recall
 - SOURCE: ${detection.source}
 - URL: ${tab.url}
 - TURNS: ${turns.length}
-- VSM: ${useVSM ? 'ON' : 'OFF'}
+- VSM: ${useVSM ? 'ON (Smart)' : 'OFF'}
 - Dictionary: ON
 - Symbolic: ${useVSM ? 'ON' : 'OFF'}
 >INSIGHTS
