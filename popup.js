@@ -8,6 +8,7 @@ const detectSourceContext = (url) => {
     { pattern: /grok\.com|x\.com\/i\/grok/, source: 'Grok', sourceType: 'LLM', working: true },
     { pattern: /kimi\.com|kimi\.moonshot\.cn/, source: 'Kimi', sourceType: 'LLM', working: true },
     { pattern: /chat\.deepseek\.com/, source: 'DeepSeek', sourceType: 'LLM', working: true },
+    { pattern: /chat\.z\.ai|chatglm\.cn/, source: 'Z.ai', sourceType: 'LLM', working: true },
     { pattern: /poe\.com/, source: 'Poe', sourceType: 'LLM', working: false }
   ];
 
@@ -30,6 +31,19 @@ const updateContextAwareUI = (detection) => {
   const saveBtn = document.getElementById('saveBtn');
   const warningDiv = document.getElementById('compatibilityWarning');
   const llmNameSpan = document.getElementById('llmName');
+  const sourceOverride = document.getElementById('sourceOverride');
+
+  // Auto-select detected platform in dropdown (but don't override if user changed it)
+  if (sourceOverride && sourceOverride.value === '' && detection.source !== 'URL') {
+    // Find matching option and select it
+    const options = sourceOverride.options;
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].value === detection.source) {
+        sourceOverride.selectedIndex = i;
+        break;
+      }
+    }
+  }
 
   if (detection.sourceType === 'LLM') {
     if (detection.working) {
@@ -67,10 +81,10 @@ const injectContentScript = async (tabId) => {
     }
 
     // 2. Inject if PING failed
-    console.log('💉 Injecting content script...');
+    console.log('💉 Injecting content scripts...');
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
-      files: ['content.js']
+      files: ['compression-dictionary.js', 'content.js']
     });
 
     // 3. Verify injection worked
@@ -88,18 +102,20 @@ const injectContentScript = async (tabId) => {
 // Harvest function with timeout protection
 const harvestChat = async (tabId) => {
   const injected = await injectContentScript(tabId);
-  if (!injected) throw new Error('Could not inject script');
+  if (!injected) throw new Error('Could not inject script. Try refreshing the page.');
 
   return new Promise((resolve, reject) => {
-    // 5s Timeout
-    const timeout = setTimeout(() => reject(new Error('Timeout waiting for response. Try refreshing the page.')), 5000);
+    // 10s Timeout (increased from 5s for slower systems)
+    const timeout = setTimeout(() => {
+      reject(new Error('Timeout waiting for content script. Please:\n1. Refresh the page\n2. Wait for chat to fully load\n3. Try again'));
+    }, 10000);
     
     chrome.tabs.sendMessage(tabId, { type: 'HARVEST' }, (response) => {
       clearTimeout(timeout);
       if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
+        reject(new Error(`Content script error: ${chrome.runtime.lastError.message}`));
       } else if (!response) {
-         reject(new Error('Empty response from script'));
+         reject(new Error('Empty response from content script. Page may not be supported.'));
       } else {
         resolve(response);
       }
@@ -137,9 +153,14 @@ const applyDictionaryCompression = (text) => {
   
   try {
     // Check if dictionary is available
-    if (window.MyMoryDictionary && window.MyMoryDictionary.COMPRESSION_DICTIONARY) {
+    if (typeof window !== 'undefined' && 
+        window.MyMoryDictionary && 
+        window.MyMoryDictionary.COMPRESSION_DICTIONARY) {
+      
+      const dict = window.MyMoryDictionary.COMPRESSION_DICTIONARY;
+      
       // Apply dictionary replacements (case-insensitive)
-      for (const [original, replacement] of Object.entries(window.MyMoryDictionary.COMPRESSION_DICTIONARY)) {
+      for (const [original, replacement] of Object.entries(dict)) {
         const regex = new RegExp('\\b' + original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
         compressed = compressed.replace(regex, replacement);
       }
@@ -149,6 +170,8 @@ const applyDictionaryCompression = (text) => {
     }
   } catch (error) {
     console.error('❌ Dictionary compression failed:', error);
+    // Return original text on error
+    return text;
   }
   
   return compressed;
@@ -225,11 +248,9 @@ const smartVSM = (text) => {
     // 1. Keep very short words to preserve readability (e.g., "is", "at")
     if (word.length <= 3) return word;
     
-    // 2. Keep capitalized words (likely names/entities) unless they are in the dictionary
+    // 2. Keep capitalized words (likely names/entities)
     // This prevents "Grok" -> "Grk" or "Python" -> "Pythn"
-    if (/^[A-Z][a-z]+$/.test(word) && 
-        window.MyMoryDictionary && 
-        !window.MyMoryDictionary.COMPRESSION_DICTIONARY[word.toLowerCase()]) {
+    if (/^[A-Z][a-z]+$/.test(word)) {
         return word; 
     }
     
@@ -279,7 +300,7 @@ document.getElementById('saveBtn').onclick = async () => {
       detection = {
         source: override,
         sourceType: override === 'URL' ? 'URL' : 'LLM',
-        working: ['ChatGPT', 'Claude', 'Gemini', 'Kimi', 'Grok', 'DeepSeek', 'Perplexity'].includes(override),
+        working: ['ChatGPT', 'Claude', 'Gemini', 'Kimi', 'Grok', 'DeepSeek', 'Perplexity', 'Z.ai'].includes(override),
         confidence: 'override'
       };
     }

@@ -41,6 +41,12 @@ function harvestChat() {
     '[data-testid="thread-message"]',
     '.prose', // Common tailwind class for markdown text
     
+    // --- Z.ai / ChatGLM (New) ---
+    '[class*="user-message"]',
+    '[class*="assistant-message"]',
+    '[class*="chat-message"]',
+    '.glm-markdown',
+    
     // --- Generic / Fallback ---
     // Many React apps use these for Markdown rendering
     '.markdown-prose',
@@ -129,6 +135,12 @@ function harvestChat() {
 // Message Listener
 if (chrome && chrome.runtime && chrome.runtime.onMessage) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'PING') {
+      // Health check - respond immediately
+      sendResponse('PONG');
+      return true;
+    }
+    
     if (message.type === 'HARVEST') {
       try {
         const turns = harvestChat();

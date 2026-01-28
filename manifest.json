@@ -1,7 +1,7 @@
 {
   "name": "MyMories by Metafintek.com",
   "description": "Save LLM chats as portable .txt files with 75% compression. Privacy-first AI chat backup tool.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "manifest_version": 3,
   "permissions": [
     "activeTab", 
@@ -10,10 +10,17 @@
   ],
   "host_permissions": [
     "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
     "https://claude.ai/*",
     "https://gemini.google.com/*",
     "https://grok.com/*",
-    "https://www.perplexity.ai/*"
+    "https://x.com/*",
+    "https://www.perplexity.ai/*",
+    "https://chat.deepseek.com/*",
+    "https://kimi.com/*",
+    "https://kimi.moonshot.cn/*",
+    "https://chat.z.ai/*",
+    "https://chatglm.cn/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
@@ -31,10 +38,17 @@
     {
       "matches": [
         "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
         "https://claude.ai/*",
         "https://gemini.google.com/*",
         "https://grok.com/*",
-        "https://www.perplexity.ai/*"
+        "https://x.com/*",
+        "https://www.perplexity.ai/*",
+        "https://chat.deepseek.com/*",
+        "https://kimi.com/*",
+        "https://kimi.moonshot.cn/*",
+        "https://chat.z.ai/*",
+        "https://chatglm.cn/*"
       ],
       "js": ["compression-dictionary.js", "content.js"],
       "run_at": "document_idle"
