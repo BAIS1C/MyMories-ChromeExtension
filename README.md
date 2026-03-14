@@ -19,7 +19,7 @@ MyMories is a privacy-first AI chat backup tool that allows you to save your con
 ## 📦 Installation
 
 ### From Chrome Web Store
-*(Pending Review - v1.1.0 submitted)*
+*(Pending Review - v1.1.5 submitted)*
 
 ### Manual Installation (Developer Mode / Updating)
 1. Download or Pull the latest code.
