@@ -1,4 +1,4 @@
-# MyMories v1.1.1
+# MyMories v1.1.5
 
 **Save LLM chats as portable .txt files with 75% compression**
 
